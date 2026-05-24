@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package federated;
+
+service FederatedLearning {
+    // Register a client with the server
+    rpc RegisterClient (RegisterRequest) returns (RegisterResponse);
+
+    // Get the latest global model weights
+    rpc GetGlobalModel (GetModelRequest) returns (ModelResponse);
+
+    // Send local model weights to the server for aggregation
+    rpc SendLocalModel (LocalModelRequest) returns (UpdateResponse);
+
+    // Send evaluation metrics
+    rpc SendMetrics (MetricsRequest) returns (UpdateResponse);
+}
+
+message RegisterRequest {
+    string client_id = 1;
+}
+
+message RegisterResponse {
+    bool success = 1;
+    int32 round_number = 2;
+}
+
+message GetModelRequest {
+    string client_id = 1;
+}
+
+message ModelResponse {
+    int32 round_number = 1;
+    bytes weights = 2; // serialized model weights
+}
+
+message LocalModelRequest {
+    string client_id = 1;
+    int32 round_number = 2;
+    bytes weights = 3;
+    int32 num_samples = 4;
+}
+
+message MetricsRequest {
+    string client_id = 1;
+    int32 round_number = 2;
+    float loss = 3;
+    float roc_auc = 4;
+    float precision = 5;
+    float recall = 6;
+    float f1_score = 7;
+    float drift_score = 8;
+}
+
+message UpdateResponse {
+    bool success = 1;
+}

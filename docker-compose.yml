@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: federated_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d federated_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: server.Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/federated_db
+    ports:
+      - "50051:50051"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  client_1:
+    build:
+      context: .
+      dockerfile: client.Dockerfile
+    command: ["--client_id", "client_1", "--server", "server:50051", "--rounds", "5"]
+    depends_on:
+      - server
+    volumes:
+      - ./data/explanations:/app/data/explanations
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  client_2:
+    build:
+      context: .
+      dockerfile: client.Dockerfile
+    command: ["--client_id", "client_2", "--server", "server:50051", "--rounds", "5"]
+    depends_on:
+      - server
+    volumes:
+      - ./data/explanations:/app/data/explanations
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  client_3:
+    build:
+      context: .
+      dockerfile: client.Dockerfile
+    command: ["--client_id", "client_3", "--server", "server:50051", "--rounds", "5"]
+    depends_on:
+      - server
+    volumes:
+      - ./data/explanations:/app/data/explanations
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  api:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/federated_db
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./data/explanations:/app/data/explanations
+
+  web:
+    build:
+      context: ./web
+      dockerfile: ../web.Dockerfile
+    ports:
+      - "8501:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
