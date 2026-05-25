@@ -1,1 +1,7 @@
 data/creditcard.csv
+
+# Data files
+data/*.csv
+data/*.bin
+data/*.pt
+data/*.pth
